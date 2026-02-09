@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BTL Snowball Calculator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+        }
+        .card {
+            background: white;
+            border-radius: 1rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        .input-group label {
+            display: block;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: #475569;
+            margin-bottom: 0.5rem;
+        }
+        .input-field {
+            width: 100%;
+            padding: 0.625rem;
+            border: 1px solid #e2e8f0;
+            border-radius: 0.5rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        .input-field:focus {
+            border-color: #3b82f6;
+            ring: 2px ring-blue-500;
+        }
+        .toggle-btn {
+            padding: 0.5rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            border-radius: 0.375rem;
+            transition: all 0.2s;
+            flex: 1;
+            text-align: center;
+            cursor: pointer;
+        }
+        .toggle-btn.active {
+            background-color: #3b82f6;
+            color: white;
+        }
+        .toggle-btn.inactive {
+            background-color: #f1f5f9;
+            color: #64748b;
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+    <div class="max-w-6xl mx-auto">
+        <header class="mb-8 text-center">
+            <h1 class="text-3xl font-bold text-slate-900">BTL Property Snowball Calculator</h1>
+            <p class="text-slate-500 mt-2">Visualise how reinvesting rental profit accelerates your portfolio growth.</p>
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Sidebar: Inputs -->
+            <div class="lg:col-span-1 space-y-6">
+                <div class="card p-6">
+                    <h2 class="text-xl font-semibold mb-4 text-slate-800 flex items-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 text-blue-500" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd" />
+                        </svg>
+                        Variables
+                    </h2>
+                    
+                    <div class="space-y-4">
+                        <div class="input-group">
+                            <label for="initialProps">Existing Properties Owned</label>
+                            <input type="number" id="initialProps" class="input-field" value="0" min="0" step="1">
+                        </div>
+
+                        <div class="input-group">
+                            <label for="monthlySavings">Personal Monthly Savings (£)</label>
+                            <input type="number" id="monthlySavings" class="input-field" value="1000" step="50">
+                        </div>
+                        
+                        <div class="input-group">
+                            <label for="avgDeposit">Average Deposit Required (£)</label>
+                            <input type="number" id="avgDeposit" class="input-field" value="40000" step="1000">
+                        </div>
+                        
+                        <div class="input-group">
+                            <label for="netRent">Net Monthly Rental Profit (£)</label>
+                            <input type="number" id="netRent" class="input-field" value="400" step="10">
+                            <p class="text-xs text-slate-400 mt-1">Profit per property.</p>
+                        </div>
+
+                        <div class="input-group bg-blue-50 p-3 rounded-lg border border-blue-100">
+                            <label class="text-blue-900">Withdrawal Method</label>
+                            <div class="flex gap-2 mb-3">
+                                <div id="modePercent" class="toggle-btn active" onclick="setWithdrawalMode('percent')">Percentage</div>
+                                <div id="modeFixed" class="toggle-btn inactive" onclick="setWithdrawalMode('fixed')">Fixed Amount</div>
+                            </div>
+
+                            <div id="percentControl">
+                                <input type="range" id="withdrawalRate" class="w-full h-2 bg-blue-200 rounded-lg appearance-none cursor-pointer" min="0" max="100" value="0">
+                                <div class="flex justify-between text-xs text-blue-700 mt-1">
+                                    <span>0%</span>
+                                    <span id="withdrawalRateValue" class="font-bold">0% Withdrawn</span>
+                                    <span>100%</span>
+                                </div>
+                            </div>
+
+                            <div id="fixedControl" class="hidden">
+                                <input type="number" id="fixedAmount" class="input-field" value="500" step="50">
+                                <p class="text-[10px] text-blue-600 mt-1">Target £ to take home each month.</p>
+                            </div>
+                            
+                            <p class="text-[10px] text-blue-600 mt-2 italic">Define how much rental profit stays in your pocket.</p>
+                        </div>
+
+                        <div class="input-group">
+                            <label for="timeframe">Simulation Years</label>
+                            <input type="range" id="timeframe" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer" min="1" max="30" value="20">
+                            <div class="flex justify-between text-xs text-slate-500 mt-1">
+                                <span>1y</span>
+                                <span id="timeframeValue" class="font-bold text-blue-600">20 Years</span>
+                                <span>30y</span>
+                            </div>
+                        </div>
+
+                        <button id="calculateBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg transition duration-200 flex justify-center items-center">
+                            Update Simulation
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Stats Summary -->
+                <div id="statsBox" class="card p-6 bg-slate-900 text-white hidden">
+                    <h3 class="text-slate-400 text-xs font-bold uppercase tracking-wider mb-4">Projections at Year <span id="endYear">20</span></h3>
+                    <div class="space-y-4">
+                        <div class="flex justify-between items-end">
+                            <div>
+                                <p class="text-slate-400 text-sm">Total Properties</p>
+                                <p id="totalProps" class="text-2xl font-bold">0</p>
+                            </div>
+                        </div>
+                        <div>
+                            <p class="text-slate-400 text-sm">Total Amount Deposited</p>
+                            <p id="totalDepositsValue" class="text-2xl font-bold">£0</p>
+                            <p class="text-slate-500 text-[10px]">Grand total of all deposits paid.</p>
+                        </div>
+                        <div class="pt-2 border-t border-slate-800">
+                            <p class="text-slate-400 text-sm">Total Monthly Rental Profit</p>
+                            <p id="totalMonthlyIncome" class="text-2xl font-bold text-white">£0</p>
+                        </div>
+                        <div class="flex gap-4">
+                            <div class="flex-1">
+                                <p class="text-emerald-400 text-[10px] font-bold uppercase tracking-tight">Pocket</p>
+                                <p id="withdrawnMonthly" class="text-lg font-bold text-emerald-400">£0</p>
+                            </div>
+                            <div class="flex-1">
+                                <p class="text-blue-400 text-[10px] font-bold uppercase tracking-tight">Reinvested</p>
+                                <p id="reinvestedMonthly" class="text-lg font-bold text-blue-400">£0</p>
+                            </div>
+                        </div>
+                    </div>
+                    <p id="capWarning" class="text-[10px] text-amber-400 mt-4 hidden italic">Note: Portfolio growth capped at 20k properties for simulation stability.</p>
+                </div>
+            </div>
+
+            <!-- Main Content: Graphs -->
+            <div class="lg:col-span-2 space-y-6">
+                <div class="card p-6">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-2">
+                        <h2 class="text-lg font-semibold text-slate-800">Portfolio Growth Over Time</h2>
+                        <div class="flex flex-wrap gap-2">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-medium bg-blue-100 text-blue-800">
+                                Blue: Properties
+                            </span>
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-medium bg-emerald-100 text-emerald-800">
+                                Green: Taken Income
+                            </span>
+                        </div>
+                    </div>
+                    <div class="relative h-80 w-full">
+                        <canvas id="growthChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="card p-6">
+                    <h2 class="text-lg font-semibold text-slate-800 mb-6">Projected Timeline</h2>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm text-left text-slate-500">
+                            <thead class="text-xs text-slate-700 uppercase bg-slate-50">
+                                <tr>
+                                    <th class="px-3 py-3">Year</th>
+                                    <th class="px-3 py-3 text-right">Props</th>
+                                    <th class="px-3 py-3 text-right">Pot Size (£)</th>
+                                    <th class="px-3 py-3 text-right">Total (£/mo)</th>
+                                    <th class="px-3 py-3 text-right">Taken (£/mo)</th>
+                                    <th class="px-3 py-3 text-right">Reinvested (£/mo)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="timelineBody">
+                                <!-- JS populated -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const ctx = document.getElementById('growthChart').getContext('2d');
+        let chartInstance = null;
+        let withdrawalMode = 'percent'; // 'percent' or 'fixed'
+
+        const inputs = {
+            initialProps: document.getElementById('initialProps'),
+            monthlySavings: document.getElementById('monthlySavings'),
+            avgDeposit: document.getElementById('avgDeposit'),
+            netRent: document.getElementById('netRent'),
+            withdrawalRate: document.getElementById('withdrawalRate'),
+            withdrawalRateValue: document.getElementById('withdrawalRateValue'),
+            fixedAmount: document.getElementById('fixedAmount'),
+            timeframe: document.getElementById('timeframe'),
+            timeframeValue: document.getElementById('timeframeValue')
+        };
+
+        const outputs = {
+            statsBox: document.getElementById('statsBox'),
+            endYear: document.getElementById('endYear'),
+            totalProps: document.getElementById('totalProps'),
+            totalDepositsValue: document.getElementById('totalDepositsValue'),
+            totalMonthlyIncome: document.getElementById('totalMonthlyIncome'),
+            withdrawnMonthly: document.getElementById('withdrawnMonthly'),
+            reinvestedMonthly: document.getElementById('reinvestedMonthly'),
+            timelineBody: document.getElementById('timelineBody'),
+            capWarning: document.getElementById('capWarning')
+        };
+
+        function setWithdrawalMode(mode) {
+            withdrawalMode = mode;
+            const modePercent = document.getElementById('modePercent');
+            const modeFixed = document.getElementById('modeFixed');
+            const percentControl = document.getElementById('percentControl');
+            const fixedControl = document.getElementById('fixedControl');
+
+            if (mode === 'percent') {
+                modePercent.className = 'toggle-btn active';
+                modeFixed.className = 'toggle-btn inactive';
+                percentControl.classList.remove('hidden');
+                fixedControl.classList.add('hidden');
+            } else {
+                modePercent.className = 'toggle-btn inactive';
+                modeFixed.className = 'toggle-btn active';
+                percentControl.classList.add('hidden');
+                fixedControl.classList.remove('hidden');
+            }
+            calculate();
+        }
+
+        inputs.timeframe.addEventListener('input', (e) => {
+            const val = parseInt(e.target.value);
+            inputs.timeframeValue.innerText = val === 1 ? '1 Year' : `${val} Years`;
+            calculate();
+        });
+
+        inputs.withdrawalRate.addEventListener('input', (e) => {
+            const val = parseInt(e.target.value);
+            inputs.withdrawalRateValue.innerText = `${val}% Withdrawn`;
+            calculate();
+        });
+
+        // Real-time updates for other inputs
+        [inputs.initialProps, inputs.monthlySavings, inputs.avgDeposit, inputs.netRent, inputs.fixedAmount].forEach(input => {
+            input.addEventListener('input', calculate);
+        });
+
+        document.getElementById('calculateBtn').addEventListener('click', calculate);
+
+        function formatCurrency(val) {
+            return new Intl.NumberFormat('en-GB', {
+                style: 'currency',
+                currency: 'GBP',
+                maximumFractionDigits: 0
+            }).format(val);
+        }
+
+        function calculate() {
+            const startProps = parseInt(inputs.initialProps.value) || 0;
+            const savings = parseFloat(inputs.monthlySavings.value) || 0;
+            const deposit = parseFloat(inputs.avgDeposit.value) || 0;
+            const rentalProfit = parseFloat(inputs.netRent.value) || 0;
+            const years = parseInt(inputs.timeframe.value) || 1;
+
+            if (deposit < 10) return;
+
+            let currentPot = 0;
+            let propertiesOwned = startProps;
+            let yearlyData = [];
+            const MAX_PROPS = 20000; 
+            let hitCap = false;
+
+            const totalMonths = years * 12;
+
+            for (let m = 1; m <= totalMonths; m++) {
+                const totalRentalIncome = propertiesOwned * rentalProfit;
+                
+                let withdrawn;
+                if (withdrawalMode === 'percent') {
+                    const rate = parseFloat(inputs.withdrawalRate.value) || 0;
+                    withdrawn = totalRentalIncome * (rate / 100);
+                } else {
+                    const amount = parseFloat(inputs.fixedAmount.value) || 0;
+                    withdrawn = Math.min(totalRentalIncome, amount);
+                }
+
+                const reinvested = totalRentalIncome - withdrawn;
+
+                currentPot += savings;
+                currentPot += reinvested;
+
+                if (currentPot >= deposit && propertiesOwned < MAX_PROPS) {
+                    const canBuy = Math.floor(currentPot / deposit);
+                    const actualToBuy = Math.min(canBuy, MAX_PROPS - propertiesOwned);
+                    
+                    propertiesOwned += actualToBuy;
+                    currentPot -= (actualToBuy * deposit);
+                    
+                    if (propertiesOwned >= MAX_PROPS) hitCap = true;
+                }
+
+                if (m % 12 === 0) {
+                    const finalTotalIncome = propertiesOwned * rentalProfit;
+                    
+                    let yWithdrawn;
+                    if (withdrawalMode === 'percent') {
+                        const rate = parseFloat(inputs.withdrawalRate.value) || 0;
+                        yWithdrawn = finalTotalIncome * (rate / 100);
+                    } else {
+                        const amount = parseFloat(inputs.fixedAmount.value) || 0;
+                        yWithdrawn = Math.min(finalTotalIncome, amount);
+                    }
+
+                    yearlyData.push({
+                        year: m / 12,
+                        properties: propertiesOwned,
+                        pot: currentPot,
+                        totalIncome: finalTotalIncome,
+                        takenIncome: yWithdrawn,
+                        reinvestedIncome: finalTotalIncome - yWithdrawn
+                    });
+                }
+            }
+
+            updateUI(yearlyData, propertiesOwned, hitCap);
+        }
+
+        function updateUI(data, totalProps, hitCap) {
+            const lastYear = data[data.length - 1];
+            const deposit = parseFloat(inputs.avgDeposit.value) || 0;
+            
+            outputs.statsBox.classList.remove('hidden');
+            outputs.endYear.innerText = data.length;
+            outputs.totalProps.innerText = totalProps.toLocaleString();
+            outputs.totalDepositsValue.innerText = formatCurrency(totalProps * deposit);
+            outputs.totalMonthlyIncome.innerText = formatCurrency(lastYear.totalIncome);
+            outputs.withdrawnMonthly.innerText = formatCurrency(lastYear.takenIncome);
+            outputs.reinvestedMonthly.innerText = formatCurrency(lastYear.reinvestedIncome);
+            
+            if (hitCap) outputs.capWarning.classList.remove('hidden');
+            else outputs.capWarning.classList.add('hidden');
+
+            outputs.timelineBody.innerHTML = data.map(row => `
+                <tr class="bg-white border-b hover:bg-slate-50 text-[10px] sm:text-xs">
+                    <td class="px-3 py-3 font-medium text-slate-900">${row.year}</td>
+                    <td class="px-3 py-3 text-right">${row.properties.toLocaleString()}</td>
+                    <td class="px-3 py-3 text-right">${formatCurrency(row.pot)}</td>
+                    <td class="px-3 py-3 text-right font-bold text-slate-700">${formatCurrency(row.totalIncome)}</td>
+                    <td class="px-3 py-3 text-right text-emerald-600 font-semibold">${formatCurrency(row.takenIncome)}</td>
+                    <td class="px-3 py-3 text-right text-blue-600 font-semibold">${formatCurrency(row.reinvestedIncome)}</td>
+                </tr>
+            `).join('');
+
+            const labels = data.map(d => `Y${d.year}`);
+            const propertyCounts = data.map(d => d.properties);
+            const takenIncomes = data.map(d => d.takenIncome);
+
+            if (chartInstance) chartInstance.destroy();
+
+            chartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Properties',
+                            data: propertyCounts,
+                            borderColor: '#3b82f6',
+                            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                            yAxisID: 'y',
+                            fill: true,
+                            tension: 0.3,
+                            pointRadius: 2
+                        },
+                        {
+                            label: 'Monthly Cash Taken (£)',
+                            data: takenIncomes,
+                            borderColor: '#10b981',
+                            backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                            yAxisID: 'y1',
+                            tension: 0.3,
+                            pointRadius: 2
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: { mode: 'index', intersect: false },
+                    scales: {
+                        y: {
+                            type: 'linear',
+                            display: true,
+                            position: 'left',
+                            title: { display: true, text: 'No. of Properties', font: { size: 10 } },
+                            ticks: { precision: 0 }
+                        },
+                        y1: {
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            title: { display: true, text: 'Income Taken (£)', font: { size: 10 } },
+                            grid: { drawOnChartArea: false }
+                        }
+                    },
+                    plugins: { legend: { display: false } }
+                }
+            });
+        }
+
+        window.onload = calculate;
+    </script>
+</body>
+</html>
